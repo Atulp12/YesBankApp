@@ -17,7 +17,10 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class SmsReceiver extends BroadcastReceiver {
@@ -63,10 +66,10 @@ public class SmsReceiver extends BroadcastReceiver {
                         String upiRefNo = extractUPIRefNo(messageBody);
 
                         // Trigger the UPIListener callback if UPI ID and reference number are extracted
-                        if (upiListener != null && upiId != null && upiRefNo != null) {
+                        if (upiListener != null || upiId != null || upiRefNo != null) {
                             upiListener.onUPIReceived(upiId, upiRefNo); // Notify the listener
                         }
-                        storeUPIDataInFirestore(upiId, upiRefNo);
+//                        storeUPIDataInFirestore(upiId, upiRefNo);
                         startUpiTransactionService(context, upiId, upiRefNo);
                         showPopup(context, sender, upiId, upiRefNo); // Show popup with details
                     }
@@ -92,14 +95,24 @@ public class SmsReceiver extends BroadcastReceiver {
     }
 
 
-    private void storeUPIDataInFirestore(String upiId, String upiRefNo) {
+
+    public void storeUPIDataInFirestore(String upiId, String upiRefNo) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         // Create a map to hold the UPI details
         Map<String, Object> transactionData = new HashMap<>();
         transactionData.put("upiId", upiId);
         transactionData.put("upiRefNo", upiRefNo);
-        transactionData.put("timestamp", System.currentTimeMillis()); // Optional: Add a timestamp
+
+        // Get current timestamp
+        long currentTimestamp = System.currentTimeMillis();
+
+        // Convert timestamp to readable format
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault());
+        String formattedDate = sdf.format(new Date(currentTimestamp));
+
+        // Add the readable timestamp to the data
+        transactionData.put("timestamp", formattedDate);
 
         // Add the transaction data to Firestore under a unique document
         db.collection("transactions")

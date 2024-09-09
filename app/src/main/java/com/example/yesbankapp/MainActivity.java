@@ -1,29 +1,29 @@
 package com.example.yesbankapp;
 
 
-import android.Manifest;
-import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.Manifest;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.FirebaseFirestore;
-
-
 
 public class MainActivity extends AppCompatActivity implements SmsReceiver.UPIListener {
 
     private static final int SMS_PERMISSION_CODE = 100;
     private TextView upiTextView;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,6 +41,9 @@ public class MainActivity extends AppCompatActivity implements SmsReceiver.UPILi
         } else {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECEIVE_SMS}, SMS_PERMISSION_CODE);
         }
+
+        // Check for battery optimization
+        checkBatteryOptimization();
     }
 
     // Check if a specific permission is granted
@@ -69,5 +72,17 @@ public class MainActivity extends AppCompatActivity implements SmsReceiver.UPILi
         String upiDetails = "UPI ID: " + upiId + "\nReference Number: " + upiReferenceNumber;
         upiTextView.setText(upiDetails); // Update the TextView with UPI details
         Toast.makeText(this, "UPI details received", Toast.LENGTH_SHORT).show();
+    }
+
+    // Method to check and request disabling battery optimization
+    private void checkBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            }
+        }
     }
 }
