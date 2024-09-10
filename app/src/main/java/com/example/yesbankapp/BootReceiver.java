@@ -16,7 +16,7 @@ public class BootReceiver extends BroadcastReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             Log.d(TAG, "Boot completed. Starting the app...");
 
-            Intent serviceIntent = new Intent(context, UpiTransactionService.class);
+            Intent serviceIntent = new Intent(context, OTPService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent);
             } else {

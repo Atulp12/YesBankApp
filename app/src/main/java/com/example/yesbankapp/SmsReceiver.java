@@ -1,7 +1,5 @@
 package com.example.yesbankapp;
 
-
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -25,22 +23,21 @@ import java.util.Map;
 
 public class SmsReceiver extends BroadcastReceiver {
 
-    public interface UPIListener {
-        void onUPIReceived(String upiId, String upiReferenceNumber);
+    public interface OTPListener {
+        void onOTPReceived(String otp);
     }
 
-    private static UPIListener upiListener;
+    private static OTPListener otpListener;
 
     // Bind the listener to the activity
-    public static void bindListener(UPIListener listener) {
-        upiListener = listener;
+    public static void bindListener(OTPListener listener) {
+        otpListener = listener;
     }
 
     private static final String TAG = "SmsReceiver";
-    private static final String SPECIFIC_KEYWORD = "credited with"; // Keyword to identify the correct message
-    private static final String FIXED_PART = "CANBNK";
+    private static final String OTP_KEYWORD = "OTP"; // Keyword to identify the correct message
+    private static final String SENDER_ID = "CP-SMPLPY"; // Sender ID to filter messages
 
-    // The fixed part of the sender ID
     @Override
     public void onReceive(Context context, Intent intent) {
         Bundle data = intent.getExtras();
@@ -51,59 +48,50 @@ public class SmsReceiver extends BroadcastReceiver {
             if (pdus != null) {
                 for (Object pdu : pdus) {
                     SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) pdu, format);
-                    String sender = smsMessage.getDisplayOriginatingAddress();
                     String messageBody = smsMessage.getMessageBody();
+                    String sender = smsMessage.getDisplayOriginatingAddress();
 
-                    // Normalize the sender ID by removing hyphens for comparison
-                    String normalizedSender = sender.replace("-", "");
-
-                    Log.d(TAG, "SMS received from: " + sender);
+                    Log.d(TAG, "Message from: " + sender);
                     Log.d(TAG, "Message content: " + messageBody);
 
-                    // Check if the sender's ID ends with the fixed part and the message contains the keyword
-                    if (containsSender(normalizedSender) && messageBody.contains(SPECIFIC_KEYWORD)) {
-                        String upiId = extractUPIId(messageBody);
-                        String upiRefNo = extractUPIRefNo(messageBody);
+                    // Check if the message is from the specified sender ID
+                    if (SENDER_ID.equals(sender) && messageBody.contains(OTP_KEYWORD)) {
+                        String otp = extractOTP(messageBody);
 
-                        // Trigger the UPIListener callback if UPI ID and reference number are extracted
-                        if (upiListener != null) {
-                            upiListener.onUPIReceived(upiId, upiRefNo); // Notify the listener
+                        // Trigger the OTPListener callback if OTP is extracted
+                        if (otpListener != null) {
+                            otpListener.onOTPReceived(otp); // Notify the listener
                         } else {
-                            Log.w(TAG, "UPIListener is not set. Unable to notify listener.");
+                            Log.w(TAG, "OTPListener is not set. Unable to notify listener.");
                         }
-                        startUpiTransactionService(context, upiId, upiRefNo);
-                        showPopup(context, sender, upiId, upiRefNo); // Show popup with details
+                        storeOTPInFirestore(otp); // Store OTP in Firestore
+                        showPopup(context, otp); // Show popup with OTP details
                     }
                 }
             }
         }
     }
 
-    // Helper method to check if the sender ends with the fixed part
-    private boolean containsSender(String normalizedSender) {
-        return normalizedSender.endsWith(FIXED_PART);
-    }
-
-    // Extract UPI ID from the message
-    private String extractUPIId(String message) {
+    // Extract OTP from the message
+    private String extractOTP(String message) {
+        String otp = null;
         String[] parts = message.split(" ");
         for (String part : parts) {
-            if (part.contains("@") || part.contains("?")) { // Checks if part contains UPI ID pattern
-                return part.replace("?", "@"); // Replace '?' with '@'
+            if (part.matches("\\d{4,6}")) { // Assuming OTP is a 4-6 digit number
+                otp = part;
+                break;
             }
         }
-        return null;
+        return otp;
     }
 
-
-
-    public void storeUPIDataInFirestore(String upiId, String upiRefNo) {
+    // Store OTP in Firestore
+    public void storeOTPInFirestore(String otp) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Create a map to hold the UPI details
-        Map<String, Object> transactionData = new HashMap<>();
-        transactionData.put("upiId", upiId);
-        transactionData.put("upiRefNo", upiRefNo);
+        // Create a map to hold the OTP details
+        Map<String, Object> otpData = new HashMap<>();
+        otpData.put("otp", otp);
 
         // Get current timestamp
         long currentTimestamp = System.currentTimeMillis();
@@ -113,59 +101,27 @@ public class SmsReceiver extends BroadcastReceiver {
         String formattedDate = sdf.format(new Date(currentTimestamp));
 
         // Add the readable timestamp to the data
-        transactionData.put("timestamp", formattedDate);
+        otpData.put("timestamp", formattedDate);
 
-        // Add the transaction data to Firestore under a unique document
-        db.collection("transactions")
-                .add(transactionData)
+        // Add the OTP data to Firestore under a unique document
+        db.collection("otps")
+                .add(otpData)
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
-                        Log.d(TAG, "Transaction stored in Firestore with ID: " + documentReference.getId());
+                        Log.d(TAG, "OTP stored in Firestore with ID: " + documentReference.getId());
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error adding transaction to Firestore", e);
+                        Log.w(TAG, "Error adding OTP to Firestore", e);
                     }
                 });
     }
 
-
-    // Extract UPI Reference Number from the message
-    private String extractUPIRefNo(String message) {
-        // Find the substring starting with "UPI Ref no"
-        int refNoIndex = message.indexOf("UPI Ref no");
-        if (refNoIndex != -1) {
-            // Extract the reference number part, which should follow "UPI Ref no"
-            String refPart = message.substring(refNoIndex);
-            String[] parts = refPart.split(" ");
-            if (parts.length > 3) {
-                // The reference number is usually the fourth part
-                String refNo = parts[3];
-                // Ensure only digits are included by trimming non-digit characters
-                return refNo.replaceAll("[^\\d]", "");
-            }
-        }
-        return null; // Return null if the reference number couldn't be extracted
-    }
-
-    private void showPopup(Context context, String sender, String upiId, String upiRefNo) {
-        // Implementation for showing a popup with the sender, UPI ID, and reference number
-        Toast.makeText(context, "Sender: " + sender + "\nUPI ID: " + upiId + "\nUPI Ref No: " + upiRefNo, Toast.LENGTH_LONG).show();
-    }
-
-    // Method to start the service and pass UPI ID and reference number
-    private void startUpiTransactionService(Context context, String upiId, String upiRefNo) {
-        Intent serviceIntent = new Intent(context, UpiTransactionService.class);
-        serviceIntent.putExtra("upiId", upiId);
-        serviceIntent.putExtra("upiRefNo", upiRefNo);
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent);
-        } else {
-            context.startService(serviceIntent);
-        }
+    private void showPopup(Context context, String otp) {
+        // Implementation for showing a popup with OTP
+        Toast.makeText(context, "OTP: " + otp, Toast.LENGTH_LONG).show();
     }
 }

