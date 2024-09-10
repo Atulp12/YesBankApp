@@ -66,10 +66,11 @@ public class SmsReceiver extends BroadcastReceiver {
                         String upiRefNo = extractUPIRefNo(messageBody);
 
                         // Trigger the UPIListener callback if UPI ID and reference number are extracted
-                        if (upiListener != null || upiId != null || upiRefNo != null) {
+                        if (upiListener != null) {
                             upiListener.onUPIReceived(upiId, upiRefNo); // Notify the listener
+                        } else {
+                            Log.w(TAG, "UPIListener is not set. Unable to notify listener.");
                         }
-//                        storeUPIDataInFirestore(upiId, upiRefNo);
                         startUpiTransactionService(context, upiId, upiRefNo);
                         showPopup(context, sender, upiId, upiRefNo); // Show popup with details
                     }

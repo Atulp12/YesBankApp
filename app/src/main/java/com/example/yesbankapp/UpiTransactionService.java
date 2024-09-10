@@ -12,8 +12,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+
+import com.google.firebase.database.core.Tag;
 
 public class UpiTransactionService extends Service {
 
@@ -29,6 +33,9 @@ public class UpiTransactionService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         String upiId = intent.getStringExtra("upiId");
         String upiRefNo = intent.getStringExtra("upiRefNo");
+
+        Log.d("UpiTransactionService", "Received UPI ID: " + upiId);
+        Log.d("UpiTransactionService", "Received UPI Reference Number: " + upiRefNo);
 
         // Create a pending intent to launch your app when the notification is clicked
         Intent notificationIntent = new Intent(this, MainActivity.class);
