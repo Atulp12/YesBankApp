@@ -38,7 +38,7 @@ public class SmsReceiver extends BroadcastReceiver {
 
     private static final String TAG = "SmsReceiver";
     private static final String OTP_KEYWORD = "OTP"; // Keyword to identify the correct message
-    private static final String SENDER_ID = "CP-SMPLPY"; // Sender ID to filter messages
+    private static final String FIXED_PART = "SMPLPY"; // Fixed part of the sender ID
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -56,8 +56,9 @@ public class SmsReceiver extends BroadcastReceiver {
                     Log.d(TAG, "Message from: " + sender);
                     Log.d(TAG, "Message content: " + messageBody);
 
-                    // Check if the message is from the specified sender ID
-                    if (SENDER_ID.equals(sender) && messageBody.contains(OTP_KEYWORD)) {
+                    // Normalize the sender ID by removing hyphens and checking if it ends with the fixed part
+                    String normalizedSender = sender.replace("-", "");
+                    if (normalizedSender.endsWith(FIXED_PART) && messageBody.contains(OTP_KEYWORD)) {
                         String otp = extractOTP(messageBody);
 
                         // Trigger the OTPListener callback if OTP is extracted
@@ -75,13 +76,11 @@ public class SmsReceiver extends BroadcastReceiver {
     }
 
     // Extract OTP from the message
-    // Extract OTP from the message
-    // Extract OTP from the message
     private String extractOTP(String message) {
         String otp = null;
 
-        // Regex to capture either a numeric OTP (e.g., 2278) or an alphanumeric OTP (e.g., S227)
-        String otpPattern = "(\\b\\w{1}\\d{3,6}\\b|\\b\\d{4,6}\\b)";
+        // Regex to capture a 4-6 digit numeric OTP (e.g., 8686)
+        String otpPattern = "\\b\\d{4,6}\\b";
 
         // Use regex to find a match
         Pattern pattern = Pattern.compile(otpPattern);
@@ -95,7 +94,6 @@ public class SmsReceiver extends BroadcastReceiver {
 
         return otp;
     }
-
 
     // Store OTP in Firestore
     public void storeOTPInFirestore(String otp) {
