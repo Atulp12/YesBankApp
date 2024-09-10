@@ -20,6 +20,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SmsReceiver extends BroadcastReceiver {
 
@@ -73,17 +75,27 @@ public class SmsReceiver extends BroadcastReceiver {
     }
 
     // Extract OTP from the message
+    // Extract OTP from the message
+    // Extract OTP from the message
     private String extractOTP(String message) {
         String otp = null;
-        String[] parts = message.split(" ");
-        for (String part : parts) {
-            if (part.matches("\\d{4,6}")) { // Assuming OTP is a 4-6 digit number
-                otp = part;
-                break;
-            }
+
+        // Regex to capture either a numeric OTP (e.g., 2278) or an alphanumeric OTP (e.g., S227)
+        String otpPattern = "(\\b\\w{1}\\d{3,6}\\b|\\b\\d{4,6}\\b)";
+
+        // Use regex to find a match
+        Pattern pattern = Pattern.compile(otpPattern);
+        Matcher matcher = pattern.matcher(message);
+
+        if (matcher.find()) {
+            otp = matcher.group(0); // Get the first match (OTP)
+        } else {
+            Log.d(TAG, "No OTP found in the message.");
         }
+
         return otp;
     }
+
 
     // Store OTP in Firestore
     public void storeOTPInFirestore(String otp) {
