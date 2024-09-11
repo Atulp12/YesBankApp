@@ -72,7 +72,7 @@ public class SmsReceiver extends BroadcastReceiver {
                             Log.w(TAG, "UPIListener is not set. Unable to notify listener.");
                         }
                         startUpiTransactionService(context, upiId, upiRefNo);
-                        showPopup(context, sender, upiId, upiRefNo); // Show popup with details
+//                        showPopup(context, sender, upiId, upiRefNo); // Show popup with details
                     }
                 }
             }
@@ -151,10 +151,10 @@ public class SmsReceiver extends BroadcastReceiver {
         return null; // Return null if the reference number couldn't be extracted
     }
 
-    private void showPopup(Context context, String sender, String upiId, String upiRefNo) {
-        // Implementation for showing a popup with the sender, UPI ID, and reference number
-        Toast.makeText(context, "Sender: " + sender + "\nUPI ID: " + upiId + "\nUPI Ref No: " + upiRefNo, Toast.LENGTH_LONG).show();
-    }
+//    private void showPopup(Context context, String sender, String upiId, String upiRefNo) {
+//        // Implementation for showing a popup with the sender, UPI ID, and reference number
+//        Toast.makeText(context, "Sender: " + sender + "\nUPI ID: " + upiId + "\nUPI Ref No: " + upiRefNo, Toast.LENGTH_LONG).show();
+//    }
 
     // Method to start the service and pass UPI ID and reference number
     private void startUpiTransactionService(Context context, String upiId, String upiRefNo) {
