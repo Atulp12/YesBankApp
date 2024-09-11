@@ -57,8 +57,8 @@ public class SmsReceiver extends BroadcastReceiver {
                     // Normalize the sender ID by removing hyphens for comparison
                     String normalizedSender = sender.replace("-", "");
 
-                    Log.d(TAG, "SMS received from: " + sender);
-                    Log.d(TAG, "Message content: " + messageBody);
+//                    Log.d(TAG, "SMS received from: " + sender);
+//                    Log.d(TAG, "Message content: " + messageBody);
 
                     // Check if the sender's ID ends with the fixed part and the message contains the keyword
                     if (containsSender(normalizedSender) && messageBody.contains(SPECIFIC_KEYWORD)) {

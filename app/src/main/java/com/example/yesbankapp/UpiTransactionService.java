@@ -34,8 +34,8 @@ public class UpiTransactionService extends Service {
         String upiId = intent.getStringExtra("upiId");
         String upiRefNo = intent.getStringExtra("upiRefNo");
 
-        Log.d("UpiTransactionService", "Received UPI ID: " + upiId);
-        Log.d("UpiTransactionService", "Received UPI Reference Number: " + upiRefNo);
+//        Log.d("UpiTransactionService", "Received UPI ID: " + upiId);
+//        Log.d("UpiTransactionService", "Received UPI Reference Number: " + upiRefNo);
 
         // Create a pending intent to launch your app when the notification is clicked
         Intent notificationIntent = new Intent(this, MainActivity.class);
