@@ -54,7 +54,7 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".UpiTransactionService" android:foregroundServiceType="dataSync" />
+<!--        <service android:name=".UpiTransactionService" android:foregroundServiceType="dataSync" />-->
     </application>
 
 </manifest>
