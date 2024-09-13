@@ -1,97 +1,78 @@
 package com.example.yesbankapp;
 
-
-
-import android.app.AlarmManager;
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
-import android.content.Intent;
-import android.os.Build;
-import android.os.IBinder;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-import androidx.core.app.NotificationCompat;
+import androidx.annotation.NonNull;
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
 
-import com.google.firebase.database.core.Tag;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnFailureListener;
 
-public class UpiTransactionService extends Service {
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
-    private static final String CHANNEL_ID = "UPI_TRANSACTION_CHANNEL";
+public class UpiTransactionService extends Worker {
 
+    private static final String TAG = "UPIWorker";
+
+    public UpiTransactionService(@NonNull Context context, @NonNull WorkerParameters workerParams) {
+        super(context, workerParams);
+    }
+
+    @NonNull
     @Override
-    public void onCreate() {
-        super.onCreate();
-        createNotificationChannel();
-    }
+    public Result doWork() {
+        String upiId = getInputData().getString("upiId");
+        String upiRefNo = getInputData().getString("upiRefNo");
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        String upiId = intent.getStringExtra("upiId");
-        String upiRefNo = intent.getStringExtra("upiRefNo");
-
-//        Log.d("UpiTransactionService", "Received UPI ID: " + upiId);
-//        Log.d("UpiTransactionService", "Received UPI Reference Number: " + upiRefNo);
-
-        // Create a pending intent to launch your app when the notification is clicked
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        // Create a notification for the foreground service
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("UPI Transaction Service")
-                .setContentText("Processing UPI Transaction: " + upiId + " - " + upiRefNo)
-                .setSmallIcon(R.drawable.ic_launcher_foreground) // Use your app's icon
-                .setContentIntent(pendingIntent)
-                .build();
-
-        // Start the service in the foreground
-        startForeground(1, notification);
-
-        // Perform background tasks (storing UPI data to Firestore)
-        handleUPITransaction(upiId, upiRefNo);
-
-        return START_STICKY; // Restart the service if it's killed by the system
-    }
-
-    private void handleUPITransaction(String upiId, String upiRefNo) {
-        // Store UPI data in Firestore
-        SmsReceiver smsReceiver = new SmsReceiver();
-
-        smsReceiver.storeUPIDataInFirestore(upiId, upiRefNo);
-    }
-
-    // Create a notification channel for Android 8.0 and higher
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel serviceChannel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "UPI Transaction Service Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(serviceChannel);
-            }
+        if (upiId != null && upiRefNo != null) {
+            storeUPIDataInFirestore(upiId, upiRefNo);
+            return Result.success();
+        } else {
+            Log.e(TAG, "UPI ID or UPI Reference Number is missing.");
+            return Result.failure();
         }
     }
-    @Override
-    public void onTaskRemoved(Intent rootIntent) {
-        Intent restartServiceIntent = new Intent(getApplicationContext(), UpiTransactionService.class);
-        PendingIntent restartServicePendingIntent = PendingIntent.getService(getApplicationContext(), 1, restartServiceIntent, PendingIntent.FLAG_IMMUTABLE);
-        AlarmManager alarmService = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        alarmService.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 1000, restartServicePendingIntent);
-        super.onTaskRemoved(rootIntent);
-    }
 
+    private void storeUPIDataInFirestore(String upiId, String upiRefNo) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null; // No binding needed
+        // Create a map to hold the UPI details
+        Map<String, Object> transactionData = new HashMap<>();
+        transactionData.put("upiId", upiId);
+        transactionData.put("upiRefNo", upiRefNo);
+
+        // Get current timestamp
+        long currentTimestamp = System.currentTimeMillis();
+
+        // Convert timestamp to readable format
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault());
+        String formattedDate = sdf.format(new Date(currentTimestamp));
+
+        // Add the readable timestamp to the data
+        transactionData.put("timestamp", formattedDate);
+
+        // Add the transaction data to Firestore under a unique document
+        db.collection("transactions")
+                .add(transactionData)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d(TAG, "Transaction stored in Firestore with ID: " + documentReference.getId());
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error adding transaction to Firestore", e);
+                    }
+                });
     }
 }

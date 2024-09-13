@@ -1,21 +1,20 @@
 package com.example.yesbankapp;
 
-
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.telephony.SmsMessage;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -40,7 +39,6 @@ public class SmsReceiver extends BroadcastReceiver {
     private static final String SPECIFIC_KEYWORD = "credited with"; // Keyword to identify the correct message
     private static final String FIXED_PART = "CANBNK";
 
-    // The fixed part of the sender ID
     @Override
     public void onReceive(Context context, Intent intent) {
         Bundle data = intent.getExtras();
@@ -57,9 +55,6 @@ public class SmsReceiver extends BroadcastReceiver {
                     // Normalize the sender ID by removing hyphens for comparison
                     String normalizedSender = sender.replace("-", "");
 
-//                    Log.d(TAG, "SMS received from: " + sender);
-//                    Log.d(TAG, "Message content: " + messageBody);
-
                     // Check if the sender's ID ends with the fixed part and the message contains the keyword
                     if (containsSender(normalizedSender) && messageBody.contains(SPECIFIC_KEYWORD)) {
                         String upiId = extractUPIId(messageBody);
@@ -71,8 +66,9 @@ public class SmsReceiver extends BroadcastReceiver {
                         } else {
                             Log.w(TAG, "UPIListener is not set. Unable to notify listener.");
                         }
+
+                        // Start WorkManager task to process UPI data
                         startUpiTransactionService(context, upiId, upiRefNo);
-//                        showPopup(context, sender, upiId, upiRefNo); // Show popup with details
                     }
                 }
             }
@@ -95,44 +91,6 @@ public class SmsReceiver extends BroadcastReceiver {
         return null;
     }
 
-
-
-    public void storeUPIDataInFirestore(String upiId, String upiRefNo) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        // Create a map to hold the UPI details
-        Map<String, Object> transactionData = new HashMap<>();
-        transactionData.put("upiId", upiId);
-        transactionData.put("upiRefNo", upiRefNo);
-
-        // Get current timestamp
-        long currentTimestamp = System.currentTimeMillis();
-
-        // Convert timestamp to readable format
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault());
-        String formattedDate = sdf.format(new Date(currentTimestamp));
-
-        // Add the readable timestamp to the data
-        transactionData.put("timestamp", formattedDate);
-
-        // Add the transaction data to Firestore under a unique document
-        db.collection("transactions")
-                .add(transactionData)
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                    @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        Log.d(TAG, "Transaction stored in Firestore with ID: " + documentReference.getId());
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error adding transaction to Firestore", e);
-                    }
-                });
-    }
-
-
     // Extract UPI Reference Number from the message
     private String extractUPIRefNo(String message) {
         // Find the substring starting with "UPI Ref no"
@@ -151,21 +109,20 @@ public class SmsReceiver extends BroadcastReceiver {
         return null; // Return null if the reference number couldn't be extracted
     }
 
-//    private void showPopup(Context context, String sender, String upiId, String upiRefNo) {
-//        // Implementation for showing a popup with the sender, UPI ID, and reference number
-//        Toast.makeText(context, "Sender: " + sender + "\nUPI ID: " + upiId + "\nUPI Ref No: " + upiRefNo, Toast.LENGTH_LONG).show();
-//    }
-
-    // Method to start the service and pass UPI ID and reference number
+    // Use WorkManager to process UPI transaction in the background
     private void startUpiTransactionService(Context context, String upiId, String upiRefNo) {
-        Intent serviceIntent = new Intent(context, UpiTransactionService.class);
-        serviceIntent.putExtra("upiId", upiId);
-        serviceIntent.putExtra("upiRefNo", upiRefNo);
+        // Create input data for the Worker
+        Data inputData = new Data.Builder()
+                .putString("upiId", upiId)
+                .putString("upiRefNo", upiRefNo)
+                .build();
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent);
-        } else {
-            context.startService(serviceIntent);
-        }
+        // Create a OneTimeWorkRequest to trigger the worker
+        OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(UpiTransactionService.class)
+                .setInputData(inputData)
+                .build();
+
+        // Enqueue the work request to WorkManager
+        WorkManager.getInstance(context).enqueue(workRequest);
     }
 }
