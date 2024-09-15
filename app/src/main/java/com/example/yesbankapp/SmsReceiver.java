@@ -83,13 +83,26 @@ public class SmsReceiver extends BroadcastReceiver {
     // Extract UPI ID from the message
     private String extractUPIId(String message) {
         String[] parts = message.split(" ");
+        StringBuilder upiId = new StringBuilder();
+
         for (String part : parts) {
-            if (part.contains("@") || part.contains("?")) { // Checks if part contains UPI ID pattern
-                return part.replace("?", "@"); // Replace '?' with '@'
+            if (part.contains("@") || part.contains("?") || part.matches("\\d+")) {
+                // Append the part to UPI ID, replacing '?' with '@' and handling spaces
+                upiId.append(part.replace("?", "@"));
+
+                // Check if the next part might be part of the UPI ID (e.g., the suffix)
+                int index = message.indexOf(part) + part.length();
+                String nextPart = message.substring(index).trim().split(" ")[0];
+                if (!nextPart.isEmpty() && nextPart.matches("\\w+")) {
+                    upiId.append("@").append(nextPart); // Append the next part as the UPI suffix
+                }
+                break; // UPI ID found
             }
         }
-        return null;
+
+        return upiId.length() > 0 ? upiId.toString() : null;
     }
+
 
     // Extract UPI Reference Number from the message
     private String extractUPIRefNo(String message) {
