@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.google.firebase.FirebaseApp;
@@ -30,6 +31,9 @@ public class MainActivity extends AppCompatActivity implements SmsReceiver.UPILi
         setContentView(R.layout.activity_main);
 
         upiTextView = findViewById(R.id.upiTextView);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
 
         // Initialize Firebase
         FirebaseApp.initializeApp(this);
