@@ -21,6 +21,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SmsReceiver extends BroadcastReceiver {
 
@@ -82,26 +85,32 @@ public class SmsReceiver extends BroadcastReceiver {
 
     // Extract UPI ID from the message
     private String extractUPIId(String message) {
-        String[] parts = message.split(" ");
-        StringBuilder upiId = new StringBuilder();
+        // Regex pattern to match email-like UPI IDs, numeric/alpha-numeric followed by bank code, and number followed by bank code
+        String regex = "\\b[\\w\\.\\-]+@[\\w\\.\\-]+\\b|\\b([\\w]+)\\s*([a-zA-Z]+)\\b";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(message);
 
-        for (String part : parts) {
-            if (part.contains("@") || part.contains("?") || part.matches("\\d+")) {
-                // Append the part to UPI ID, replacing '?' with '@' and handling spaces
-                upiId.append(part.replace("?", "@"));
-
-                // Check if the next part might be part of the UPI ID (e.g., the suffix)
-                int index = message.indexOf(part) + part.length();
-                String nextPart = message.substring(index).trim().split(" ")[0];
-                if (!nextPart.isEmpty() && nextPart.matches("\\w+")) {
-                    upiId.append("@").append(nextPart); // Append the next part as the UPI suffix
-                }
-                break; // UPI ID found
+        while (matcher.find()) {
+            // Check for email-like UPI IDs
+            if (matcher.group(0).contains("@")) {
+                return matcher.group(0).replace("?", "@");
+            }
+            // Check for alphanumeric UPI IDs followed by bank code (e.g., atul4050 ybl)
+            else if (matcher.group(1) != null && matcher.group(2) != null) {
+                // Ensure we're handling both number + bank and alphanumeric + bank cases
+                String upiID = matcher.group(1) + "@" + matcher.group(2);
+                return upiID;
             }
         }
 
-        return upiId.length() > 0 ? upiId.toString() : null;
+        return null; // Return null if no valid UPI ID is found
     }
+
+
+
+
+
+
 
 
     // Extract UPI Reference Number from the message
