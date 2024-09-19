@@ -40,6 +40,8 @@ public class UpiTransactionService extends Worker {
     public Result doWork() {
         String upiId = getInputData().getString("upiId");
         String upiRefNo = getInputData().getString("upiRefNo");
+
+        Log.e(TAG, upiId);
 //
 //        if (upiId != null && upiRefNo != null) {
 //            storeUPIDataInFirestore(upiId, upiRefNo);
