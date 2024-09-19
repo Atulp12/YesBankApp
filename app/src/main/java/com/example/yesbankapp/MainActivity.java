@@ -30,9 +30,9 @@ public class MainActivity extends AppCompatActivity implements SmsReceiver.UPILi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        upiTextView = findViewById(R.id.upiTextView);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+//        upiTextView = findViewById(R.id.upiTextView);
+//        Toolbar toolbar = findViewById(R.id.toolbar);
+//        setSupportActionBar(toolbar);
 
 
         // Initialize Firebase
@@ -73,8 +73,8 @@ public class MainActivity extends AppCompatActivity implements SmsReceiver.UPILi
     // Implementing UPIListener callback
     @Override
     public void onUPIReceived(String upiId, String upiReferenceNumber) {
-        String upiDetails = "UPI ID: " + upiId + "\nReference Number: " + upiReferenceNumber;
-        upiTextView.setText(upiDetails); // Update the TextView with UPI details
+//        String upiDetails = "UPI ID: " + upiId + "\nReference Number: " + upiReferenceNumber;
+//        upiTextView.setText(upiDetails); // Update the TextView with UPI details
 //        Toast.makeText(this, "UPI details received", Toast.LENGTH_SHORT).show();
     }
 

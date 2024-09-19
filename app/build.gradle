@@ -43,6 +43,7 @@ dependencies {
     androidTestImplementation libs.espresso.core
     implementation libs.firebase.database.v2030
     implementation libs.work.runtime
+    implementation libs.okhttp
 
     // Add Firebase Analytics dependency (optional but recommended)
     implementation libs.firebase.analytics

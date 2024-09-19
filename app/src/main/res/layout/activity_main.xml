@@ -6,31 +6,11 @@
     android:orientation="vertical"
     >
 
-    <!-- AppBar with Toolbar -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <ImageView
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:elevation="4dp"
-        app:title="Scrippter"
-        app:titleTextColor="@android:color/white"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <!-- Main Content -->
-    <TextView
-        android:id="@+id/upiTextView"
-        android:layout_margin="10dp"
-        android:layout_width="match_parent"
-
-        android:layout_height="200dp"
-        android:text="UPI details will be shown here"
-        android:gravity="center"
-        android:textSize="18sp"
-        android:textColor="@android:color/black"
+        android:layout_height="300dp"
         android:layout_centerInParent="true"
-        android:background="@android:color/white"
-        android:elevation="4dp"
-      />
+        android:src="@mipmap/ic_launcher_foreground"/>
+
 
 </RelativeLayout>
