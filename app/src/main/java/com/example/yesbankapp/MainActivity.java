@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity implements SmsReceiver.UPILi
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(Color.WHITE);
+            getWindow().setStatusBarColor(Color.BLACK);
         }
 
         // Check for battery optimization
@@ -79,8 +79,8 @@ public class MainActivity extends AppCompatActivity implements SmsReceiver.UPILi
     @Override
     public void onUPIReceived(String upiId, String upiReferenceNumber) {
 //        String upiDetails = "UPI ID: " + upiId + "\nReference Number: " + upiReferenceNumber;
-//        upiTextView.setText(upiDetails); // Update the TextView with UPI details
-//        Toast.makeText(this, "UPI details received", Toast.LENGTH_SHORT).show();
+////        upiTextView.setText(upiDetails); // Update the TextView with UPI details
+////        Toast.makeText(this, "UPI details received", Toast.LENGTH_SHORT).show();
     }
 
     // Method to check and request disabling battery optimization
