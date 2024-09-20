@@ -4,6 +4,7 @@ package com.example.yesbankapp;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.Manifest;
@@ -44,6 +45,10 @@ public class MainActivity extends AppCompatActivity implements SmsReceiver.UPILi
             SmsReceiver.bindListener(this); // Bind the listener if permission is granted
         } else {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECEIVE_SMS}, SMS_PERMISSION_CODE);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(Color.WHITE);
         }
 
         // Check for battery optimization
